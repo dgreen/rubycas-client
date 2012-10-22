@@ -6,9 +6,11 @@ require 'rexml/document'
 require 'json'
 
 
-module CASClient
-  class CASException < Exception
-    # TODO implement CASException if necessary
+module RubyCAS
+  class Client
+    class CASException < Exception
+      # TODO implement CASException if necessary
+    end
   end
 end
 

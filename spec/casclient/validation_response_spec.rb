@@ -1,7 +1,7 @@
 require 'spec_helper'
 require 'rubycas-client/responses.rb'
 
-describe CASClient::ValidationResponse do
+describe RubyCAS::Client::ValidationResponse do
   context "when parsing extra attributes as raw" do
     let(:response_text) do
 <<RESPONSE_TEXT
@@ -20,7 +20,7 @@ describe CASClient::ValidationResponse do
 RESPONSE_TEXT
     end
 
-    subject { CASClient::ValidationResponse.new response_text, :encode_extra_attributes_as => :raw }
+    subject { RubyCAS::Client::ValidationResponse.new response_text, :encode_extra_attributes_as => :raw }
 
     it "sets text attributes to their string value" do
       subject.extra_attributes["name"].should == "Jimmy Bob"
@@ -56,7 +56,7 @@ RESPONSE_TEXT
 RESPONSE_TEXT
     end
 
-    subject { CASClient::ValidationResponse.new response_text, :encode_extra_attributes_as => :yaml }
+    subject { RubyCAS::Client::ValidationResponse.new response_text, :encode_extra_attributes_as => :yaml }
 
     it "sets text attributes to their string value" do
       subject.extra_attributes["name"].should == "Jimmy Bob"
@@ -91,7 +91,7 @@ RESPONSE_TEXT
 RESPONSE_TEXT
     end
 
-    subject { CASClient::ValidationResponse.new response_text, :encode_extra_attributes_as => :json }
+    subject { RubyCAS::Client::ValidationResponse.new response_text, :encode_extra_attributes_as => :json }
 
     it "sets the value of non-CDATA escaped empty attribute to nil" do
       subject.extra_attributes["mobile_phone"].should be_nil
@@ -137,7 +137,7 @@ RESPONSE_TEXT
 RESPONSE_TEXT
     end
 
-    subject { CASClient::ValidationResponse.new response_text }
+    subject { RubyCAS::Client::ValidationResponse.new response_text }
 
     it "sets attributes for other type of format" do
       expected = {"username" => "myuser", "name" => 'My User', "email" => 'myuser@mail.example.com'}

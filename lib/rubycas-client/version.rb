@@ -1,3 +1,5 @@
-module CasClient
-  VERSION = "2.3.9"
+module RubyCAS
+  class Client
+    VERSION = "3.0.0"
+  end
 end

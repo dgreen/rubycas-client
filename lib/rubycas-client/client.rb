@@ -1,4 +1,4 @@
-module CASClient
+module RubyCAS
   # The client brokers all HTTP transactions with the CAS server.
   class Client
     attr_reader :cas_base_url, :cas_destination_logout_param_name
@@ -154,7 +154,7 @@ module CASClient
       )
 
       res = submit_data_to_cas(login_url, data)
-      response = CASClient::LoginResponse.new(res)
+      response = RubyCAS::Client::LoginResponse.new(res)
 
       if response.is_success?
         log.info("Login was successful for ticket: #{response.ticket.inspect}.")

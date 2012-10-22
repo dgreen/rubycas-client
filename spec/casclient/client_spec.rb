@@ -1,7 +1,7 @@
 require 'spec_helper'
 
-describe CASClient::Client do
-  let(:client)     { CASClient::Client.new(:login_url => login_url, :cas_base_url => '', :logger => "#{File.dirname(__FILE__)}/../tmp/spec.log")}
+describe RubyCAS::Client do
+  let(:client)     { RubyCAS::Client.new(:login_url => login_url, :cas_base_url => '', :logger => "#{File.dirname(__FILE__)}/../tmp/spec.log")}
   let(:login_url)  { "http://localhost:3443/"}
   let(:uri)        { URI.parse(login_url) }
   let(:session)    { double('session', :use_ssl= => true, :verify_mode= => true) }
@@ -19,7 +19,7 @@ describe CASClient::Client do
     end
 
     it "sets up the proxy with the known proxy host and port" do
-      client = CASClient::Client.new(:login_url => login_url, :cas_base_url => '', :proxy_host => 'foo', :proxy_port => 1234)
+      client = RubyCAS::Client.new(:login_url => login_url, :cas_base_url => '', :proxy_host => 'foo', :proxy_port => 1234)
       Net::HTTP.should_receive(:Proxy).with('foo', 1234).and_return(proxy)
       client.send(:https_connection, uri)
     end
@@ -57,7 +57,7 @@ describe CASClient::Client do
         response.stub :kind_of? => false
         lambda {
           client.request_login_ticket
-        }.should raise_error(CASClient::CASException)
+        }.should raise_error(RubyCAS::Client::CASException)
       end
 
       it "returns the response body when the request is a success" do
@@ -73,14 +73,14 @@ describe CASClient::Client do
       it "should raise an exception when the request is not a success or 422" do
         response.stub :kind_of? => false
         lambda {
-          client.send(:request_cas_response, uri, CASClient::ValidationResponse)
+          client.send(:request_cas_response, uri, RubyCAS::Client::ValidationResponse)
         }.should raise_error(RuntimeError)
       end
 
       it "should return a ValidationResponse object when the request is a success or 422" do
-        CASClient::ValidationResponse.stub(:new).and_return(validation_response)
+        RubyCAS::Client::ValidationResponse.stub(:new).and_return(validation_response)
         response.stub :kind_of? => true
-        client.send(:request_cas_response, uri, CASClient::ValidationResponse).should == validation_response
+        client.send(:request_cas_response, uri, RubyCAS::Client::ValidationResponse).should == validation_response
       end
     end
 
