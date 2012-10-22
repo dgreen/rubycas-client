@@ -40,20 +40,8 @@ module CASClient
 
       @username_session_key         = conf[:username_session_key] || :cas_user
       @extra_attributes_session_key = conf[:extra_attributes_session_key] || :cas_extra_attributes
-      @ticket_store_class = case conf[:ticket_store]
-        when :local_dir_ticket_store, nil
-          CASClient::Tickets::Storage::LocalDirTicketStore
-        when :active_record_ticket_store
-          CASClient::Tickets::Storage::ACTIVE_RECORD_TICKET_STORE
-        else
-          conf[:ticket_store]
-      end
-      @ticket_store = @ticket_store_class.new conf[:ticket_store_config]
-      raise CASException, "The Ticket Store is not a subclass of AbstractTicketStore, it is a #{@ticket_store_class}" unless @ticket_store.kind_of? CASClient::Tickets::Storage::AbstractTicketStore
 
-      @log = CASClient::LoggerWrapper.new
-      @log.set_real_logger(conf[:logger]) if conf[:logger]
-      @ticket_store.log = @log
+      @log = Logger.new(conf[:logger] || STDERR)
       @conf_options = conf
     end
 
