@@ -18,5 +18,13 @@ RSpec.configure do |config|
   config.filter_run_including :focus
   config.run_all_when_everything_filtered = true
   config.fail_fast = false
+  # create tmp directory
+  config.before(:all) do
+    FileUtils.mkdir_p(SPEC_TMP_DIR)
+  end
+  # get rid of all test fiels
+  config.after(:all) do
+    FileUtils.rm_rf(SPEC_TMP_DIR)
+  end
 end
 

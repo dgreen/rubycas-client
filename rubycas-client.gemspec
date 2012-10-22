@@ -14,7 +14,7 @@ Gem::Specification.new do |gem|
   ]
   gem.licenses = ["MIT"]
   gem.rdoc_options = ["--main", "README.rdoc"]
-  gem.version       = CasClient::VERSION
+  gem.version       = RubyCAS::Client::VERSION
 
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }

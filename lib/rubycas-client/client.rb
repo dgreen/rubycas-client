@@ -1,60 +1,28 @@
 module RubyCAS
   # The client brokers all HTTP transactions with the CAS server.
   class Client
-    attr_reader :cas_base_url, :cas_destination_logout_param_name
-    attr_reader :log, :username_session_key, :extra_attributes_session_key
-    attr_reader :ticket_store
-    attr_reader :proxy_host, :proxy_port
-    attr_writer :login_url, :validate_url, :proxy_url, :logout_url, :service_url
-    attr_accessor :proxy_callback_url, :proxy_retrieval_url
+    attr_reader :config, :log
 
-    def initialize(conf = nil)
-      configure(conf) if conf
-    end
+    def initialize(conf, environment = nil)
+      conf_hash = case conf
+      when Hash
+        conf
+      when String
+        parse_config_file(conf)
+      else
+        raise ArgumentError, "Could not configure RubyCAS::Client with #{conf.inspect}"
+      end
+      conf_hash = stringify_hash_keys(conf_hash)
 
-    def configure(conf)
-      #TODO: raise error if conf contains unrecognized cas options (this would help detect user typos in the config)
-
-      raise ArgumentError, "Missing :cas_base_url parameter!" unless conf[:cas_base_url]
-
-      if conf.has_key?("encode_extra_attributes_as")
-        unless (conf[:encode_extra_attributes_as] == :json || conf[:encode_extra_attributes_as] == :yaml)
-          raise ArgumentError, "Unkown Value for :encode_extra_attributes_as parameter! Allowed options are json or yaml - #{conf[:encode_extra_attributes_as]}"
-        end
+      unless environment.nil?
+        conf_hash = stringify_hash_keys(conf_hash[environment.to_sym])
       end
 
-      @cas_base_url      = conf[:cas_base_url].gsub(/\/$/, '')
-      @cas_destination_logout_param_name = conf[:cas_destination_logout_param_name]
 
-      @login_url    = conf[:login_url]
-      @logout_url   = conf[:logout_url]
-      @validate_url = conf[:validate_url]
-      @proxy_url    = conf[:proxy_url]
-      @service_url  = conf[:service_url]
-      @force_ssl_verification  = conf[:force_ssl_verification]
-      @proxy_callback_url  = conf[:proxy_callback_url]
+      @config = RubyCAS::Client::Config.new(conf_hash)
+      @config.freeze
 
-      #proxy server settings
-      @proxy_host = conf[:proxy_host]
-      @proxy_port = conf[:proxy_port]
-
-      @username_session_key         = conf[:username_session_key] || :cas_user
-      @extra_attributes_session_key = conf[:extra_attributes_session_key] || :cas_extra_attributes
-
-      @log = Logger.new(conf[:logger] || STDERR)
-      @conf_options = conf
-    end
-
-    def cas_destination_logout_param_name
-      @cas_destination_logout_param_name || "destination"
-    end
-
-    def login_url
-      @login_url || (cas_base_url + "/login")
-    end
-
-    def validate_url
-      @validate_url || (cas_base_url + "/proxyValidate")
+      @log = Logger.new(config.logger || STDERR)
     end
 
     # Returns the CAS server's logout url.
@@ -71,7 +39,7 @@ module RubyCAS
     # follow_url:: This satisfies section 2.3.1 of the CAS protocol spec.
     #              See http://www.ja-sig.org/products/cas/overview/protocol
     def logout_url(destination_url = nil, follow_url = nil, service_url = nil)
-      url = @logout_url || (cas_base_url + "/logout")
+      url = @logout_url || (config.cas_base_url + "/logout")
       uri = URI.parse(url)
       service_url = (service_url if service_url) || @service_url
       h = uri.query ? query_to_hash(uri.query) : {}
@@ -96,7 +64,7 @@ module RubyCAS
     end
 
     def proxy_url
-      @proxy_url || (cas_base_url + "/proxy")
+      @proxy_url || (config.cas_base_url + "/proxy")
     end
 
     def validate_service_ticket(st)
@@ -123,7 +91,7 @@ module RubyCAS
     # Returns true if the configured CAS server is up and responding;
     # false otherwise.
     def cas_server_is_up?
-      uri = URI.parse(login_url)
+      uri = URI.parse(config.login_url)
 
       log.debug "Checking if CAS server at URI '#{uri}' is up..."
 
@@ -169,7 +137,7 @@ module RubyCAS
     # This only works with RubyCAS-Server, since obtaining login
     # tickets in this manner is not part of the official CAS spec.
     def request_login_ticket
-      uri = URI.parse(login_url+'Ticket')
+      uri = URI.parse(config.login_url+'Ticket')
       https = https_connection(uri)
       res = https.post(uri.path, ';')
 
@@ -218,7 +186,7 @@ module RubyCAS
     private
 
     def https_connection(uri)
-      https = Net::HTTP::Proxy(proxy_host, proxy_port).new(uri.host, uri.port)
+      https = Net::HTTP::Proxy(config.proxy_host, config.proxy_port).new(uri.host, uri.port)
       https.use_ssl = (uri.scheme == 'https')
       https.verify_mode = (@force_ssl_verification ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE)
       https
@@ -274,5 +242,14 @@ module RubyCAS
       end
       pairs.join("&")
     end
+
+    private
+      def parse_config_file(file_path)
+        YAML::load(File.read(file_path))
+      end
+
+      def stringify_hash_keys(hash)
+        hash.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
+      end
   end
 end
