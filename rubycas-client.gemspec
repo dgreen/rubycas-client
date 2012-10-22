@@ -3,8 +3,8 @@ $LOAD_PATH << File.expand_path("../lib", __FILE__)
 require 'rubycas-client/version'
 
 Gem::Specification.new do |gem|
-  gem.authors = ["Matt Campbell", "Matt Zukowski", "Matt Walker", "Matt Campbell"]
-  gem.email         = ["matt@soupmatt.com"]
+  gem.authors = ["Matt Campbell", "Matt Zukowski", "Matt Walker", "Matt Campbell", "Robert Mitwicki"]
+  gem.email         = ["matt@soupmatt.com", "robert.mitwicki@opensoftware.pl"]
   gem.summary = %q{Client library for the Central Authentication Service (CAS) protocol.}
   gem.description = %q{Client library for the Central Authentication Service (CAS) protocol.}
   gem.homepage = "https://github.com/rubycas/rubycas-client"
@@ -23,12 +23,9 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
 
   gem.add_dependency("activesupport")
+  gem.add_dependency("json")
   gem.add_development_dependency("rake")
-  gem.add_development_dependency("database_cleaner")
-  gem.add_development_dependency("json")
   gem.add_development_dependency("rspec")
-  gem.add_development_dependency("appraisal")
-  gem.add_development_dependency("rails")
   gem.add_development_dependency("simplecov")
   gem.add_development_dependency("sqlite3")
 end

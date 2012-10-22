@@ -17,6 +17,5 @@ group :tools do
 
   platforms :jruby do
     gem "jruby-openssl"
-    gem "activerecord-jdbcsqlite3-adapter"
   end
 end
