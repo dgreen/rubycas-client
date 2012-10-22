@@ -1,5 +1,5 @@
 require 'spec_helper'
-require 'casclient/responses.rb'
+require 'rubycas-client/responses.rb'
 
 describe CASClient::ValidationResponse do
   context "when parsing extra attributes as raw" do
