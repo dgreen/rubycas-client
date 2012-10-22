@@ -37,7 +37,7 @@ module CASClient
 
     def parse(raw_text, options)
       raise BadResponseException,
-        "CAS response is empty." if raw_text.empty?
+        "CAS response is empty." if raw_text.nil? || raw_text.empty?
       @parse_datetime = Time.now
       if raw_text =~ /^(yes|no)\n(.*?)\n$/m
         @protocol = 1.0
@@ -68,7 +68,8 @@ module CASClient
         @xml.elements.to_a('//cas:authenticationSuccess/cas:attributes/* | //cas:authenticationSuccess/*[local-name() != \'proxies\' and local-name() != \'proxyGrantingTicket\' and local-name() != \'user\' and local-name() != \'attributes\']').each do |el|
           inner_text = el.cdatas.length > 0 ? el.cdatas.join('') : el.text
           name = el.name
-          unless (attrs = el.attributes).empty?
+          attrs = el.attributes
+          unless attrs.nil? || attrs.empty?
             name       = attrs['name']
             inner_text = attrs['value']
           end
@@ -89,7 +90,7 @@ module CASClient
     end
 
     def parse_extra_attribute_value(value, encode_extra_attributes_as)
-      attr_value = if value.empty?
+      attr_value = if value.nil? || value.empty?
          nil
        elsif !encode_extra_attributes_as
          begin
@@ -140,7 +141,7 @@ module CASClient
 
     def parse(raw_text)
       raise BadResponseException,
-        "CAS response is empty." if raw_text.empty?
+        "CAS response is empty." if raw_text.nil? || raw_text.empty?
       @parse_datetime = Time.now
 
       @xml = check_and_parse_xml(raw_text)
@@ -214,7 +215,7 @@ module CASClient
     end
 
     def is_success?
-      !@failure && !ticket.empty?
+      !@failure && (!ticket.nil? || !ticket.empty?)
     end
 
     def is_failure?
