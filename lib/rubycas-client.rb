@@ -14,7 +14,6 @@ module RubyCAS
   end
 end
 
-require 'rubycas-client/tickets'
 require 'rubycas-client/responses'
 require 'rubycas-client/client'
 require 'rubycas-client/config'
