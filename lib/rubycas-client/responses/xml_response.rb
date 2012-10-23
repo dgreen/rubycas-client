@@ -19,11 +19,6 @@ module RubyCAS
 
         return doc.elements["cas:serviceResponse"].elements[1]
       end
-
-      def to_s
-        xml.to_s
-      end
     end
-
   end
 end
