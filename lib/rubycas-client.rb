@@ -9,7 +9,6 @@ require 'json'
 module RubyCAS
   class Client
     class CASException < Exception
-      # TODO implement CASException if necessary
     end
   end
 end
