@@ -142,5 +142,11 @@ cas_base_url: https://cas.server.local/cas
         client.send(:submit_data_to_cas, uri, {}).should == response
       end
     end
+
+    context "add service to login_url" do
+      it "should add service to login url" do
+        client.add_service_to_login_url("http://service.local").should == "http://localhost:3443/?service=http%3A%2F%2Fservice.local"
+      end
+    end
   end
 end
