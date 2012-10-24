@@ -2,14 +2,14 @@ source "http://rubygems.org"
 
 gemspec
 
-group :tools do
+
+group :development do
+  gem 'debugger'
   gem "simplecov", :require => false
+  gem "fuubar"
   gem "guard"
   gem "guard-rspec"
   gem "guard-bundler"
-  gem "fuubar"
-  gem "rb-fsevent"
-  gem "growl", :group => :darwin
 
   platforms :ruby do
     gem "sqlite3"
@@ -19,3 +19,4 @@ group :tools do
     gem "jruby-openssl"
   end
 end
+
