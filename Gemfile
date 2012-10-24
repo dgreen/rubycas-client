@@ -11,10 +11,6 @@ group :development_tools do
   gem "guard-rspec"
   gem "guard-bundler"
 
-  platforms :ruby do
-    gem "sqlite3"
-  end
-
   platforms :jruby do
     gem "jruby-openssl"
   end
