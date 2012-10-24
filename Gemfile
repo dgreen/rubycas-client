@@ -2,7 +2,7 @@ source "http://rubygems.org"
 
 gemspec
 
-group :development do
+group :development_tools do
   gem 'debugger-linecache'
   gem 'debugger'
   gem "simplecov", :require => false
