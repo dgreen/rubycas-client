@@ -16,3 +16,4 @@ end
 require 'rubycas-client/responses'
 require 'rubycas-client/client'
 require 'rubycas-client/config'
+require 'rubycas-client/tickets'
