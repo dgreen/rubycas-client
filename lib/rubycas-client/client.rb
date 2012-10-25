@@ -216,7 +216,7 @@ module RubyCAS
         raise "The CAS authentication server at #{uri} responded with an error (#{raw_res.inspect})!"
       end
 
-      type.new(raw_res.body, @conf_options)
+      type.new(raw_res.body, config)
     end
 
     private
