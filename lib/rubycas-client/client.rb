@@ -67,16 +67,22 @@ module RubyCAS
       @proxy_url || (config.cas_base_url + "/proxy")
     end
 
-    def validate_service_ticket(st)
-      uri = URI.parse(validate_url)
+    ##
+    # Prepare uri for service ticket
+    #
+    # :args: service_ticket
+    def prepare_uri_for(st)
+      uri = URI.parse(config.proxy_validate_url)
       h = uri.query ? query_to_hash(uri.query) : {}
       h['service'] = st.service
       h['ticket'] = st.ticket
       h['renew'] = "1" if st.renew
-      h['pgtUrl'] = proxy_callback_url if proxy_callback_url
+      h['pgtUrl'] = config.proxy_callback_url if config.proxy_callback_url
       uri.query = hash_to_query(h)
+      uri
+    end
 
-      response = request_cas_response(uri, ValidationResponse)
+    def validate_service_ticket(response, st)
       st.user = response.user
       st.extra_attributes = response.extra_attributes
       st.pgt_iou = response.pgt_iou
@@ -86,6 +92,7 @@ module RubyCAS
 
       return st
     end
+
     alias validate_proxy_ticket validate_service_ticket
 
     # Returns true if the configured CAS server is up and responding;
@@ -137,7 +144,7 @@ module RubyCAS
     # This only works with RubyCAS-Server, since obtaining login
     # tickets in this manner is not part of the official CAS spec.
     def request_login_ticket
-      uri = URI.parse(config.login_url+'Ticket')
+      uri = URI.parse(config.cas_base_url+'/loginTicket')
       https = https_connection(uri)
       res = https.post(uri.path, ';')
 
@@ -183,15 +190,6 @@ module RubyCAS
       uri.to_s
     end
 
-    private
-
-    def https_connection(uri)
-      https = Net::HTTP::Proxy(config.proxy_host, config.proxy_port).new(uri.host, uri.port)
-      https.use_ssl = (uri.scheme == 'https')
-      https.verify_mode = (@force_ssl_verification ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE)
-      https
-    end
-
     # Fetches a CAS response of the given type from the given URI.
     # Type should be either ValidationResponse or ProxyResponse.
     def request_cas_response(uri, type, options={})
@@ -220,6 +218,16 @@ module RubyCAS
 
       type.new(raw_res.body, @conf_options)
     end
+
+    private
+
+    def https_connection(uri)
+      https = Net::HTTP::Proxy(config.proxy_host, config.proxy_port).new(uri.host, uri.port)
+      https.use_ssl = (uri.scheme == 'https')
+      https.verify_mode = (@force_ssl_verification ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE)
+      https
+    end
+
 
     # Submits some data to the given URI and returns a Net::HTTPResponse.
     def submit_data_to_cas(uri, data)
