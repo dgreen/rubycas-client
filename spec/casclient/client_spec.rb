@@ -54,8 +54,8 @@ cas_base_url: https://cas.server.local/cas
       end
     end
   end
-  let(:client)     { RubyCAS::Client.new(:login_url => login_url, :cas_base_url => '', :logger => "#{File.dirname(__FILE__)}/../tmp/spec.log")}
-  let(:login_url)  { "http://localhost:3443/"}
+  let(:client)     { RubyCAS::Client.new(:cas_base_url => 'http://localhost:3443', :logger => "#{File.dirname(__FILE__)}/../tmp/spec.log")}
+  let(:login_url)  { client.config.login_url }
   let(:uri)        { URI.parse(login_url) }
   let(:session)    { double('session', :use_ssl= => true, :verify_mode= => true) }
 
@@ -106,7 +106,7 @@ cas_base_url: https://cas.server.local/cas
 
     context "request login ticket" do
       it "raises an exception when the request was not a success" do
-        session.stub(:post).with("/Ticket", ";").and_return(response)
+        session.stub(:post).with("/loginTicket", ";").and_return(response)
         response.stub :kind_of? => false
         lambda {
           client.request_login_ticket
@@ -114,7 +114,7 @@ cas_base_url: https://cas.server.local/cas
       end
 
       it "returns the response body when the request is a success" do
-        session.stub(:post).with("/Ticket", ";").and_return(response)
+        session.stub(:post).with("/loginTicket", ";").and_return(response)
         response.stub :kind_of? => true
         client.request_login_ticket.should == "HTTP BODY"
       end
@@ -135,6 +135,7 @@ cas_base_url: https://cas.server.local/cas
         response.stub :kind_of? => true
         client.send(:request_cas_response, uri, RubyCAS::Client::ValidationResponse).should == validation_response
       end
+
     end
 
     context "submit data to cas" do
@@ -145,8 +146,53 @@ cas_base_url: https://cas.server.local/cas
 
     context "add service to login_url" do
       it "should add service to login url" do
-        client.add_service_to_login_url("http://service.local").should == "http://localhost:3443/?service=http%3A%2F%2Fservice.local"
+        client.add_service_to_login_url("http://service.local").should == "http://localhost:3443/login?service=http%3A%2F%2Fservice.local"
       end
     end
+
+  end
+  describe "#authentication" do
+    let(:cas_base_url)  { "http://localhost"}
+    let(:client)     { RubyCAS::Client.new(:cas_base_url => cas_base_url,
+                                           :logger => "#{File.dirname(__FILE__)}/../tmp/spec.log")}
+    let(:session)    { double('session', :use_ssl= => true, :verify_mode= => true) }
+    let(:ticket)     { "ST-1351084494rAD846856F10F7B121B"}
+    let(:service)     { "http://service.local" }
+    let(:service_ticket) { RubyCAS::Client::ServiceTicket.new(ticket, service, false) }
+
+    context "receive service ticket from cas" do
+
+      it "should create service ticket which is not valid yet" do
+        service_ticket.ticket.should == "ST-1351084494rAD846856F10F7B121B"
+        service_ticket.service.should == "http://service.local"
+        service_ticket.has_been_validated?.should == false
+        service_ticket.is_valid?.should == false
+      end
+
+      let(:uri) { client.prepare_uri_for(service_ticket) }
+      let(:response) { double("response", :user => "test", :extra_attributes => "",
+                              :pgt_iou => "", :is_success? => true, :failure_code => nil, :failure_message => nil) }
+      let(:subject) { client.validate_service_ticket(response, service_ticket) }
+
+      it "should prepare uri for service ticket" do
+        uri.query.should == "service=http%3A%2F%2Fservice.local&ticket=ST-1351084494rAD846856F10F7B121B"
+        uri.host.should == "localhost"
+        uri.path.should == "/proxyValidate"
+      end
+
+      it "should validate service ticket" do
+        subject.is_valid?.should == true
+      end
+    end
+
+
+    context "receive proxy service ticket from cas" do
+
+      it "should create service ticket" do
+        service_ticket.ticket.should == "ST-1351084494rAD846856F10F7B121B"
+        service_ticket.service.should == "http://service.local"
+      end
+    end
+
   end
 end
