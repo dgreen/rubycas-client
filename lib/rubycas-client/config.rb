@@ -26,7 +26,9 @@ module RubyCAS
       config_attr :service_url, nil
       config_attr :proxy_callback_url, nil
       config_attr :username_session_key, :cas_user_name
+      config_attr :extra_attributes_session_key, nil
       config_attr :encode_extra_attributes_as, :yaml
+      config_attr :cas_destination_logout_param_name, "destination"
       config_attr :proxy_host, nil
       config_attr :proxy_port, nil
 

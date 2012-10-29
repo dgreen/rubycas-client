@@ -1,10 +1,11 @@
 require "debugger"
 module RubyCAS
   class Client
+    ##
     # Represents a response from the CAS server to a login request
     # (i.e. after submitting a username/password).
     class LoginResponse
-      attr_reader :tgt, :ticket, :service_redirect_url
+      attr_reader :tgt, :ticket, :service_redirect_url, :cookies
       attr_reader :failure_message
 
       def initialize(http_response = nil)
@@ -14,8 +15,16 @@ module RubyCAS
       def parse_http_response(http_response)
         header = http_response.to_hash
 
-        header['set-cookie'].to_a.each do |cookie|
-          cookie.split(";").first =~ /tgt=([^&]+)/
+        @cookies = []
+        cookie = {}
+        header['set-cookie'].to_a.each do |el|
+          elements = el.split(";")
+          elements.each do |element|
+            key, value = element.split("=")
+            cookie.merge!({key.strip => value.strip})
+          end
+          @cookies << cookie
+          elements.first =~ /tgt=([^&]+)/
           @tgt = $~[1] if $~
           break if @tgt
         end

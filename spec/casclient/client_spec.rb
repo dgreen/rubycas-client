@@ -81,6 +81,9 @@ cas_base_url: https://cas.server.local/cas
   context "cas server requests" do
     let(:response)   { double('response', :body => 'HTTP BODY', :code => '200') }
     let(:connection) { double('connection', :get => response, :post => response, :request => response) }
+    let(:service_ticket) { RubyCAS::Client::ServiceTicket.new(ticket, service, false) }
+    let(:ticket)     { "ST-1351084494rAD846856F10F7B121B"}
+    let(:service)     { "http://service.local" }
 
     before :each do
       client.stub(:https_connection).and_return(session)
@@ -135,7 +138,6 @@ cas_base_url: https://cas.server.local/cas
         response.stub :kind_of? => true
         client.send(:request_cas_response, uri, RubyCAS::Client::ValidationResponse).should == validation_response
       end
-
     end
 
     context "submit data to cas" do
@@ -149,16 +151,6 @@ cas_base_url: https://cas.server.local/cas
         client.add_service_to_login_url("http://service.local").should == "http://localhost:3443/login?service=http%3A%2F%2Fservice.local"
       end
     end
-
-  end
-  describe "#authentication" do
-    let(:cas_base_url)  { "http://localhost"}
-    let(:client)     { RubyCAS::Client.new(:cas_base_url => cas_base_url,
-                                           :logger => "#{File.dirname(__FILE__)}/../tmp/spec.log")}
-    let(:session)    { double('session', :use_ssl= => true, :verify_mode= => true) }
-    let(:ticket)     { "ST-1351084494rAD846856F10F7B121B"}
-    let(:service)     { "http://service.local" }
-    let(:service_ticket) { RubyCAS::Client::ServiceTicket.new(ticket, service, false) }
 
     context "receive service ticket from cas" do
 
@@ -185,9 +177,17 @@ cas_base_url: https://cas.server.local/cas
       end
     end
 
+    context "login to service" do
+      let(:login_ticket_response) { double("response", :is_success? => true, :ticket => "Ticket") }
+      it "should return ticket and set cookie for logged user" do
+        session.stub(:post).with("/loginTicket", ";").and_return(response)
+        response.stub :kind_of? => true
+        RubyCAS::Client::LoginResponse.stub(:new).and_return(login_ticket_response)
+        client.login_to_service({:login => "test", :password => "test"}, service).is_success?.should == true
+      end
+    end
 
     context "receive proxy service ticket from cas" do
-
       it "should create service ticket" do
         service_ticket.ticket.should == "ST-1351084494rAD846856F10F7B121B"
         service_ticket.service.should == "http://service.local"
@@ -195,4 +195,5 @@ cas_base_url: https://cas.server.local/cas
     end
 
   end
+
 end

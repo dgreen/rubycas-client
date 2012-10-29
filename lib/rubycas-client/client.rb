@@ -51,7 +51,7 @@ module RubyCAS
         dh.delete('ticket')
         duri.query = hash_to_query(dh)
         destination_url = duri.to_s.gsub(/\?$/, '')
-        h[cas_destination_logout_param_name] = destination_url if destination_url
+        h[config.cas_destination_logout_param_name] = destination_url if destination_url
         h['gateway'] = 'true'
       elsif follow_url
         h['url'] = follow_url if follow_url
@@ -82,28 +82,31 @@ module RubyCAS
       uri
     end
 
-    def validate_service_ticket(response, st)
-      st.user = response.user
-      st.extra_attributes = response.extra_attributes
-      st.pgt_iou = response.pgt_iou
-      st.success = response.is_success?
-      st.failure_code = response.failure_code
-      st.failure_message = response.failure_message
+    ##
+    # Validate service thicket base on response from CAS server
+    #
+    # :args: response, service_ticket
+    # :return :service_ticket
+    def validate_service_ticket(response, service_ticket)
+      service_ticket.user = response.user
+      service_ticket.extra_attributes = response.extra_attributes
+      service_ticket.pgt_iou = response.pgt_iou
+      service_ticket.success = response.is_success?
+      service_ticket.failure_code = response.failure_code
+      service_ticket.failure_message = response.failure_message
 
-      return st
+      return service_ticket
     end
 
     alias validate_proxy_ticket validate_service_ticket
 
+    ##
     # Returns true if the configured CAS server is up and responding;
     # false otherwise.
     def cas_server_is_up?
       uri = URI.parse(config.login_url)
-
       log.debug "Checking if CAS server at URI '#{uri}' is up..."
-
       https = https_connection(uri)
-
       begin
         raw_res = https.start do |conn|
           conn.get("#{uri.path}?#{uri.query}")
@@ -112,32 +115,28 @@ module RubyCAS
         log.warn "CAS server did not respond! (#{e.inspect})"
         return false
       end
-
       log.debug "CAS server responded with #{raw_res.inspect}:\n#{raw_res.body}"
-
       return raw_res.kind_of?(Net::HTTPSuccess)
     end
 
+    ##
     # Requests a login using the given credentials for the given service;
     # returns a LoginResponse object.
+    #
+    # :args: credentials, service
     def login_to_service(credentials, service)
-      lt = request_login_ticket
-
+      login_ticket = request_login_ticket
       data = credentials.merge(
-        :lt => lt,
+        :lt => login_ticket,
         :service => service
       )
-
-      res = submit_data_to_cas(login_url, data)
+      res = submit_data_to_cas(config.login_url, data)
       response = RubyCAS::Client::LoginResponse.new(res)
-
-      if response.is_success?
-        log.info("Login was successful for ticket: #{response.ticket.inspect}.")
-      end
-
+      log.info("Login was successful for ticket: #{response.ticket.inspect}.") if response.is_success?
       return response
     end
 
+    ##
     # Requests a login ticket from the CAS server for use in a login request;
     # returns a LoginTicket object.
     #
@@ -216,42 +215,41 @@ module RubyCAS
         raise "The CAS authentication server at #{uri} responded with an error (#{raw_res.inspect})!"
       end
 
-      type.new(raw_res.body, config)
+      type.new(raw_res.body, {:encode_extra_attributes_as => config.encode_extra_attributes_as})
     end
 
     private
 
-    def https_connection(uri)
-      https = Net::HTTP::Proxy(config.proxy_host, config.proxy_port).new(uri.host, uri.port)
-      https.use_ssl = (uri.scheme == 'https')
-      https.verify_mode = (@force_ssl_verification ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE)
-      https
-    end
-
-
-    # Submits some data to the given URI and returns a Net::HTTPResponse.
-    def submit_data_to_cas(uri, data)
-      uri = URI.parse(uri) unless uri.kind_of? URI
-      req = Net::HTTP::Post.new(uri.path)
-      req.set_form_data(data, ';')
-      https = https_connection(uri)
-      https.start {|conn| conn.request(req) }
-    end
-
-    def query_to_hash(query)
-      CGI.parse(query)
-    end
-
-    def hash_to_query(hash)
-      pairs = []
-      hash.each do |k, vals|
-        vals = [vals] unless vals.kind_of? Array
-        vals.each {|v| pairs << (v.nil? ? CGI.escape(k) : "#{CGI.escape(k)}=#{CGI.escape(v)}")}
+      def https_connection(uri)
+        https = Net::HTTP::Proxy(config.proxy_host, config.proxy_port).new(uri.host, uri.port)
+        https.use_ssl = (uri.scheme == 'https')
+        https.verify_mode = (@force_ssl_verification ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE)
+        https
       end
-      pairs.join("&")
-    end
 
-    private
+
+      # Submits some data to the given URI and returns a Net::HTTPResponse.
+      def submit_data_to_cas(uri, data)
+        uri = URI.parse(uri) unless uri.kind_of? URI
+        req = Net::HTTP::Post.new(uri.path)
+        req.set_form_data(data, ';')
+        https = https_connection(uri)
+        https.start {|conn| conn.request(req) }
+      end
+
+      def query_to_hash(query)
+        CGI.parse(query)
+      end
+
+      def hash_to_query(hash)
+        pairs = []
+        hash.each do |k, vals|
+          vals = [vals] unless vals.kind_of? Array
+          vals.each {|v| pairs << (v.nil? ? CGI.escape(k) : "#{CGI.escape(k)}=#{CGI.escape(v)}")}
+        end
+        pairs.join("&")
+      end
+
       def parse_config_file(file_path)
         YAML::load(File.read(file_path))
       end
